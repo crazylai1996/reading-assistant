@@ -2,23 +2,19 @@
 
 import torch
 import sys
-import logging
 
-from typing import Dict, List, Optional
+from typing import List, Optional, Dict, Any
 from langchain_huggingface.embeddings import HuggingFaceEmbeddings
-from sentence_transformers import CrossEncoder
-from langchain_classic.retrievers.document_compressors.cross_encoder_rerank import CrossEncoderReranker
-from langchain_core.retrievers import BaseRetriever
-from langchain_core.callbacks import CallbackManagerForRetrieverRun
-from langchain_core.documents import Document
-from qdrant_client import models, QdrantClient
-from langchain_qdrant import QdrantVectorStore, FastEmbedSparse, RetrievalMode
-from langchain_community.retrievers import BM25Retriever
 from langchain_community.cross_encoders import HuggingFaceCrossEncoder
+from langchain_classic.retrievers.document_compressors.cross_encoder_rerank import CrossEncoderReranker
+from langchain_classic.retrievers import ContextualCompressionRetriever
 from langchain_text_splitters import MarkdownHeaderTextSplitter
-from langchain_classic.retrievers import EnsembleRetriever, ContextualCompressionRetriever
-from fastembed import SparseTextEmbedding
+from langchain_qdrant import QdrantVectorStore, FastEmbedSparse, RetrievalMode
+from qdrant_client import models, QdrantClient
+from langchain_core.documents import Document
 
+
+from config import get_settings
 from models.schemes import BookNote
 
 class ReadingNotesRAG:
@@ -54,6 +50,7 @@ class ReadingNotesRAG:
             vector_name="dense",
             sparse_vector_name="sparse",
         )
+
     def _init_collection(self):
         if not self.client.collection_exists(self.collection_name):
             # 创建集合：同时定义稠密和稀疏向量配置
@@ -105,12 +102,12 @@ class ReadingNotesRAG:
                 ),
             )
 
-    def search_notes(self, user_id: str, query: str, book_filter: Optional[str] = None) -> List[Dict[str, str]]:
+    def search_notes(self, user_id: str, query: str, book_title: Optional[str] = None) -> List[Document]:
         """搜索读书笔记"""
         # 1. 构造 Qdrant 原生过滤器
         conditions = [models.FieldCondition(key="metadata.user_id", match=models.MatchValue(value=user_id))]
-        if book_filter:
-            conditions.append(models.FieldCondition(key="metadata.title", match=models.MatchValue(value=book_filter)))
+        if book_title:
+            conditions.append(models.FieldCondition(key="metadata.title", match=models.MatchValue(value=book_title)))
         
         search_filter = models.Filter(must=conditions)
 
@@ -147,7 +144,7 @@ if __name__ == "__main__":
         )
         print("✅ 读书笔记导入成功！")
         # 示例搜索
-        search_results = rag.search_notes(user_id="user123", query="什么是损失函数", book_filter="Python深度学习（第2版）")
+        search_results = rag.search_notes(user_id="user123", query="什么是损失函数", book_title="Python深度学习（第2版）")
         print("🔍 搜索结果:")
         for res in search_results:
             print("-"*50)

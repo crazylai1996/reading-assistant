@@ -2,13 +2,15 @@
 
 from fastapi import APIRouter, UploadFile, File, HTTPException
 from rag.rag_pipeline import ReadingNotesRAG
-from models.schemes import BookNote
+from models.schemes import BookNote, AskRequest, AskResponse
+from agents.reading_notes_agent import ReadingNotesAgent
 
 import re
 
 notes_router = APIRouter(prefix="/notes", tags=["读书笔记"])
 
 rag_pipeline = ReadingNotesRAG(qdrant_path="/tmp/qdrant")
+reading_notes_agent = ReadingNotesAgent(rag_pipeline=rag_pipeline)
 
 @notes_router.post(path="/upload", 
                    summary="上传读书笔记", 
@@ -50,4 +52,24 @@ async def upload_reading_note(file: UploadFile = File(..., description="仅支�
         raise HTTPException(
             status_code=500,
             detail=f"上传失败: {str(e)}"
+        )
+
+
+@notes_router.post(path="/ask",
+                   summary="基于笔记问答",
+                   response_model=AskResponse,
+                   description="基于已上传的读书笔记内容，使用 LLM 回答用户问题")
+async def ask_notes(request: AskRequest):
+    print(f"💬 收到问答请求: user={request.user_id}, query={request.query[:50]}...")
+    try:
+        answer = reading_notes_agent.ask_notes(user_id=request.user_id, 
+                                             query=request.query)
+        return AskResponse(answer=answer)
+    except Exception as e:
+        print(f"❌ 问答失败: {str(e)}")
+        import traceback
+        traceback.print_exc()
+        raise HTTPException(
+            status_code=500,
+            detail=f"问答失败: {str(e)}"
         )

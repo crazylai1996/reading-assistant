@@ -89,7 +89,7 @@ if __name__ == "__main__":
     import uvicorn
     
     uvicorn.run(
-        "app.api.main:app",
+        "api.server_run:app",
         host=settings.host,
         port=settings.port,
         reload=True
