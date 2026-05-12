@@ -62,7 +62,7 @@ async def upload_reading_note(file: UploadFile = File(..., description="仅支�
 async def ask_notes(request: AskRequest):
     print(f"💬 收到问答请求: user={request.user_id}, query={request.query[:50]}...")
     try:
-        answer = reading_notes_agent.ask_notes(user_id=request.user_id, 
+        answer = reading_notes_agent.ask_notes(user_id="laixiaoming", 
                                              query=request.query)
         return AskResponse(answer=answer)
     except Exception as e:

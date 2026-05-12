@@ -7,7 +7,8 @@ from langchain_core.documents import Document
 from langchain.agents import create_agent
 from langchain.tools import ToolRuntime, tool
 from dataclasses import dataclass
-
+from pydantic import BaseModel
+from langchain_core.tools.structured import StructuredTool
 
 from rag.rag_pipeline import ReadingNotesRAG
 from llm.simple_llm_client import create_llm_client
@@ -16,6 +17,11 @@ from llm.simple_llm_client import create_llm_client
 class UserContext:
     """agent工具运行时的用户上下文，包含用户标识等信息"""
     user_id: str
+
+class SearchInput(BaseModel):
+    """search_notes工具的输入参数"""
+    query: str
+    book_title: Optional[str] = None
 
 SYSTEM_PROMPT = """
 你是读书笔记助手。请严格基于以下要求回答用户问题。
@@ -30,12 +36,19 @@ class ReadingNotesAgent:
     def __init__(self, rag_pipeline: ReadingNotesRAG):
         self.rag_pipeline = rag_pipeline
         self.llm = create_llm_client()
+
+        search_tool = StructuredTool.from_function(
+            func=self.search_notes,
+            name="search_notes",
+            description="根据关键词搜索读书笔记，返回相关内容",
+            args_schema=SearchInput
+        )
+
         self.agent = create_agent(model=self.llm, 
-                                  tools=[self.search_notes], 
+                                  tools=[search_tool], 
                                   system_prompt=SYSTEM_PROMPT,
                                   context_schema=UserContext)
 
-    @tool("search_notes", return_direct=True)
     def search_notes(self, runtime: ToolRuntime[UserContext], query: str, book_title: Optional[str] = None) -> str:
         """工具方法：根据用户标识和书名搜索该用户的读书笔记，返回相关内容"""
         user_id = runtime.context.user_id
