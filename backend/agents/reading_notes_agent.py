@@ -10,6 +10,7 @@ from dataclasses import dataclass
 from pydantic import BaseModel
 from langchain_core.tools.structured import StructuredTool
 
+from models.schemes import AskRequest
 from rag.rag_pipeline import ReadingNotesRAG
 from llm.simple_llm_client import create_llm_client
 
@@ -40,7 +41,7 @@ class ReadingNotesAgent:
         search_tool = StructuredTool.from_function(
             func=self.search_notes,
             name="search_notes",
-            description="根据关键词搜索读书笔记，返回相关内容",
+            description="根据关键词和书名搜索读书笔记，返回相关内容",
             args_schema=SearchInput
         )
 
@@ -55,12 +56,18 @@ class ReadingNotesAgent:
         docs = self.rag_pipeline.search_notes(user_id=user_id, query=query, book_title=book_title)
         return self._format_context(docs)
 
-    def ask_notes(self, user_id: str, query: str) -> str:
+    def ask_notes(self, user_id: str, ask_request: AskRequest) -> str:
         """基于读书笔记回答问题"""
+        query = self._build_query(ask_request=ask_request)
         response = self.agent.invoke({"messages": [{"role": "user", "content": query}]}, 
                                      context=UserContext(user_id=user_id), )
         return self._get_final_response(response)
-
+    def _build_query(self, ask_request: AskRequest) -> str:
+        query = f"""
+           用户提问：{ask_request.query}
+           { "书名: " + ask_request.book_filter if ask_request.book_filter else ""}
+        """
+        return query
     def _get_final_response(self, response: dict[str, Any]) -> str:
         """从智能体响应中提取最终回复内容"""
         return response["messages"][-1].content if response["messages"] else ""

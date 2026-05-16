@@ -2,7 +2,7 @@
 
 from fastapi import APIRouter, UploadFile, File, HTTPException
 from rag.rag_pipeline import ReadingNotesRAG
-from models.schemes import BookNote, AskRequest, AskResponse
+from models.schemes import BookNote, AskRequest, AskResponse, BookUploadResult
 from agents.reading_notes_agent import ReadingNotesAgent
 
 import re
@@ -44,7 +44,7 @@ async def upload_reading_note(file: UploadFile = File(..., description="仅支�
 
         rag_pipeline.import_notes(user_id="laixiaoming", reading_notes=[book_note])
         print(f"✅ 上传成功: {book_note.title}")
-        return {"filename": book_note.title, "content_length": len(text)}
+        return BookUploadResult(title=book_note.title)
     except Exception as e:
         print(f"❌ 上传失败: {str(e)}")
         import traceback
@@ -60,7 +60,7 @@ async def upload_reading_note(file: UploadFile = File(..., description="仅支�
                    response_model=AskResponse,
                    description="基于已上传的读书笔记内容，使用 LLM 回答用户问题")
 async def ask_notes(request: AskRequest):
-    print(f"💬 收到问答请求: user={request.user_id}, query={request.query[:50]}...")
+    print(f"💬 收到问答请求:query={request.query[:50]}...")
     try:
         answer = reading_notes_agent.ask_notes(user_id="laixiaoming", 
                                              query=request.query)

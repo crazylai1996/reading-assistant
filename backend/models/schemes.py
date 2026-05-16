@@ -8,8 +8,10 @@ class BookNote(BaseModel):
     author: str = Field(default='', max_length=50)
     content: str = Field(default='')
 
+class BookUploadResult(BaseModel):
+    title: str = Field(..., description="书名")
+
 class AskRequest(BaseModel):
-    user_id: str = Field(..., min_length=1, max_length=50, description="用户ID")
     query: str = Field(..., min_length=1, max_length=1000, description="用户问题")
     book_filter: Optional[str] = Field(default=None, max_length=100, description="限定书名（可选）")
 
