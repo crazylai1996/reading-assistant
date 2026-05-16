@@ -51,7 +51,7 @@ class ReadingNotesAgent:
                                   context_schema=UserContext)
 
     def search_notes(self, runtime: ToolRuntime[UserContext], query: str, book_title: Optional[str] = None) -> str:
-        """工具方法：根据用户标识和书名搜索该用户的读书笔记，返回相关内容"""
+        """工具方法：根据关键词和书名搜索该用户的读书笔记，返回相关内容"""
         user_id = runtime.context.user_id
         docs = self.rag_pipeline.search_notes(user_id=user_id, query=query, book_title=book_title)
         return self._format_context(docs)

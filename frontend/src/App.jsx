@@ -1,7 +1,7 @@
 import { useState, useRef, useEffect, useCallback } from 'react'
 import './App.css'
 
-const API_BASE = 'http://localhost:8000'
+const API_BASE = 'http://localhost:8000/api'
 
 function formatTime() {
   return new Date().toLocaleTimeString('zh-CN', { hour: '2-digit', minute: '2-digit' })
@@ -57,7 +57,6 @@ function App() {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          user_id: 'laixiaoming',
           query: text,
           book_filter: activeBook || null,
         }),

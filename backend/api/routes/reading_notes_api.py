@@ -63,7 +63,7 @@ async def ask_notes(request: AskRequest):
     print(f"💬 收到问答请求:query={request.query[:50]}...")
     try:
         answer = reading_notes_agent.ask_notes(user_id="laixiaoming", 
-                                             query=request.query)
+                                             ask_request=request)
         return AskResponse(answer=answer)
     except Exception as e:
         print(f"❌ 问答失败: {str(e)}")

@@ -104,6 +104,7 @@ class ReadingNotesRAG:
 
     def search_notes(self, user_id: str, query: str, book_title: Optional[str] = None) -> List[Document]:
         """搜索读书笔记"""
+        print(f"🔍 搜索笔记: user_id={user_id}, query={query[:30]}..., book_title={book_title}")
         # 1. 构造 Qdrant 原生过滤器
         conditions = [models.FieldCondition(key="metadata.user_id", match=models.MatchValue(value=user_id))]
         if book_title:
