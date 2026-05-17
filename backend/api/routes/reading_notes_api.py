@@ -4,6 +4,11 @@ from fastapi import APIRouter, UploadFile, File, HTTPException
 from rag.rag_pipeline import ReadingNotesRAG
 from models.schemes import BookNote, AskRequest, AskResponse, BookUploadResult
 from agents.reading_notes_agent import ReadingNotesAgent
+from storage.database import (
+    insert_reading_history,
+    create_conversation,
+    add_conversation_message,
+)
 
 import re
 
@@ -12,39 +17,44 @@ notes_router = APIRouter(prefix="/notes", tags=["读书笔记"])
 rag_pipeline = ReadingNotesRAG(qdrant_path="/tmp/qdrant")
 reading_notes_agent = ReadingNotesAgent(rag_pipeline=rag_pipeline)
 
-@notes_router.post(path="/upload", 
-                   summary="上传读书笔记", 
+@notes_router.post(path="/upload",
+                   summary="上传读书笔记",
              description="上传读书笔记文件，仅支持 .md格式")
 async def upload_reading_note(file: UploadFile = File(..., description="仅支持 .md")):
     print(f"📥 收到上传请求: {file.filename} ({file.content_type})")
     if file.content_type != "text/markdown":
         raise HTTPException(status_code=400, detail="仅支持上传 .md 格式文件")
-    
+
     try:
         content = await file.read()
         text = content.decode("utf-8")
 
         book_note = BookNote()
         book_note.content = text
-        # 仅检查前 8 行，避免大文件扫描开销
         head_lines = text.splitlines()[:8]
         full_head = "\n".join(head_lines)
 
-        # 1️⃣ 提取书名：精准匹配《》
         title_match = re.search(r'《([^》]+)》', full_head)
         if title_match:
             book_note.title = title_match.group(1).strip()
 
-        # 2️⃣ 提取作者：兼容 [国籍] 姓名 著 / 姓名 著 / by Author
-        # 优先匹配含“著/译”的行，避免误抓正文人名
         author_match = re.search(r'(?:\[[^\]]*\]\s*)?([\u4e00-\u9fa5a-zA-Z·\s]+?)\s*[著译]', full_head)
         if author_match:
             author = author_match.group(1).strip()
-            book_note.author = re.sub(r'\s+', ' ', author) 
+            book_note.author = re.sub(r'\s+', ' ', author)
 
         rag_pipeline.import_notes(user_id="laixiaoming", reading_notes=[book_note])
-        print(f"✅ 上传成功: {book_note.title}")
-        return BookUploadResult(title=book_note.title)
+
+        history_id = insert_reading_history(
+            user_id="laixiaoming",
+            book_title=book_note.title,
+            author=book_note.author,
+            filename=file.filename,
+            content_md=text,
+        )
+
+        print(f"✅ 上传成功: {book_note.title} (id={history_id})")
+        return BookUploadResult(title=book_note.title, id=history_id)
     except Exception as e:
         print(f"❌ 上传失败: {str(e)}")
         import traceback
@@ -60,11 +70,24 @@ async def upload_reading_note(file: UploadFile = File(..., description="仅支�
                    response_model=AskResponse,
                    description="基于已上传的读书笔记内容，使用 LLM 回答用户问题")
 async def ask_notes(request: AskRequest):
-    print(f"💬 收到问答请求:query={request.query[:50]}...")
+    print(f"💬 收到问答请求: query={request.query[:50]}..., conv_id={request.conversation_id}")
     try:
-        answer = reading_notes_agent.ask_notes(user_id="laixiaoming", 
+        answer = reading_notes_agent.ask_notes(user_id="laixiaoming",
                                              ask_request=request)
-        return AskResponse(answer=answer)
+
+        conversation_id = request.conversation_id
+        if conversation_id is None:
+            title = request.query[:30] + ("..." if len(request.query) > 30 else "")
+            conversation_id = create_conversation(
+                user_id="laixiaoming",
+                title=title,
+                book_filter=request.book_filter,
+            )
+            add_conversation_message(conversation_id, "user", request.query)
+
+        add_conversation_message(conversation_id, "assistant", answer)
+
+        return AskResponse(answer=answer, conversation_id=conversation_id)
     except Exception as e:
         print(f"❌ 问答失败: {str(e)}")
         import traceback

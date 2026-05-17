@@ -3,7 +3,9 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from config import get_settings, validate_config, print_config
-from api.routes.reading_notes_api import notes_router 
+from api.routes.reading_notes_api import notes_router
+from api.routes.history_api import history_router
+from storage.database import init_db
 
 # 获取配置
 settings = get_settings()
@@ -28,6 +30,7 @@ app.add_middleware(
 
 # 注册路由
 app.include_router(notes_router, prefix="/api")
+app.include_router(history_router, prefix="/api")
 
 
 @app.on_event("startup")
@@ -39,7 +42,10 @@ async def startup_event():
     
     # 打印配置信息
     print_config()
-    
+
+    # 初始化数据库
+    init_db()
+
     # 验证配置
     try:
         validate_config()
