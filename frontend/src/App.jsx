@@ -166,18 +166,7 @@ function App() {
         }
 
         const data = await res.json()
-        setBooks((prev) => {
-          const exists = prev.find((b) => b.title === data.title)
-          if (exists) return prev
-          return [
-            ...prev,
-            {
-              title: data.title || file.name.replace('.md', ''),
-              author: '',
-              historyId: data.id,
-            },
-          ]
-        })
+        fetchReadingHistory()
         showToast(`"${data.title || file.name}" 上传成功`, 'success')
       } catch (err) {
         showToast(err.message || '上传失败，请检查服务是否启动', 'error')
@@ -265,6 +254,18 @@ function App() {
       if (res.ok) {
         const data = await res.json()
         setReadingHistory(data.items || [])
+
+        if (data.items) {
+          currentBooks = data.items.map(item => (
+            {
+              title: item.book_title,
+              author: item.author,
+              historyId: item.id
+            }
+          )) 
+          setBooks(currentBooks)
+        }
+        
       }
     } catch {
       // silent
@@ -291,7 +292,7 @@ function App() {
   const handleSwitchView = useCallback((view) => {
     setCurrentView(view)
     setReadingDetail(null)
-    if (view === 'history') fetchReadingHistory()
+    if (view === 'history' || view === 'books') fetchReadingHistory()
     if (view === 'conversations') fetchConversations()
   }, [fetchReadingHistory, fetchConversations])
 
@@ -378,13 +379,13 @@ function App() {
       case 'history':
         return (
           <>
-            <div className="book-list-label">阅读历史 ({readingHistory.length})</div>
+            <div className="book-list-label">读书笔记 ({readingHistory.length})</div>
             {loadingHistory ? (
               <div className="book-empty"><span className="book-empty-icon">⏳</span>加载中...</div>
             ) : readingHistory.length === 0 ? (
               <div className="book-empty">
                 <span className="book-empty-icon">📭</span>
-                暂无阅读记录
+                暂无读书笔记
               </div>
             ) : (
               readingHistory.map((item) => (
@@ -455,7 +456,7 @@ function App() {
         return (
           <>
             <div className="book-list-label">
-              已上传笔记 ({books.length})
+              读过 ({books.length})
             </div>
             {books.length === 0 ? (
               <div className="book-empty">
@@ -634,7 +635,7 @@ function App() {
             className={`sidebar-nav-item${currentView === 'history' ? ' active' : ''}`}
             onClick={() => handleSwitchView('history')}
           >
-            阅读历史
+            读书笔记
           </button>
           <button
             className={`sidebar-nav-item${currentView === 'conversations' ? ' active' : ''}`}
