@@ -7,10 +7,13 @@ from langchain.tools import ToolRuntime
 from dataclasses import dataclass
 from pydantic import BaseModel
 from langchain_core.tools.structured import StructuredTool
+from langgraph.checkpoint.sqlite import SqliteSaver
 
 from models.schemes import AskRequest
 from rag.rag_pipeline import ReadingNotesRAG
 from llm.simple_llm_client import create_llm_client
+from storage.sqlite_api import get_db
+
 
 @dataclass
 class UserContext:
@@ -36,6 +39,8 @@ class ReadingNotesAgent:
         self.rag_pipeline = rag_pipeline
         self.llm = create_llm_client()
 
+        sqlite_conn = get_db()
+        checkpoint_saver = SqliteSaver(sqlite_conn)
         search_tool = StructuredTool.from_function(
             func=self.search_notes,
             name="search_notes",
@@ -46,7 +51,8 @@ class ReadingNotesAgent:
         self.agent = create_agent(model=self.llm, 
                                   tools=[search_tool], 
                                   system_prompt=SYSTEM_PROMPT,
-                                  context_schema=UserContext)
+                                  context_schema=UserContext,
+                                  checkpointer=checkpoint_saver)
 
     def search_notes(self, runtime: ToolRuntime[UserContext], query: str, book_title: Optional[str] = None) -> str:
         """工具方法：根据关键词和书名搜索该用户的读书笔记，返回相关内容"""
