@@ -5,7 +5,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from config import get_settings, validate_config, print_config
 from api.routes.reading_notes_api import notes_router
 from api.routes.history_api import history_router
-from storage.database import init_db
+from storage.sqlite_api import init_db
 
 # 获取配置
 settings = get_settings()

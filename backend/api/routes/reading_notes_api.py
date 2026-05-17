@@ -4,8 +4,10 @@ from fastapi import APIRouter, UploadFile, File, HTTPException
 from rag.rag_pipeline import ReadingNotesRAG
 from models.schemes import BookNote, AskRequest, AskResponse, BookUploadResult
 from agents.reading_notes_agent import ReadingNotesAgent
-from storage.database import (
-    insert_reading_history,
+from storage.reading_history_dao import (
+    insert_reading_history
+)
+from storage.conversation_history_dao import (
     create_conversation,
     add_conversation_message,
 )

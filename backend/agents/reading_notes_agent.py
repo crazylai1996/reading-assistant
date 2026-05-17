@@ -1,11 +1,9 @@
 """读书笔记问答Agent"""
 
 from typing import Optional, List, Any
-from langchain_core.prompts import ChatPromptTemplate
-from langchain_core.output_parsers import StrOutputParser
 from langchain_core.documents import Document
 from langchain.agents import create_agent
-from langchain.tools import ToolRuntime, tool
+from langchain.tools import ToolRuntime
 from dataclasses import dataclass
 from pydantic import BaseModel
 from langchain_core.tools.structured import StructuredTool

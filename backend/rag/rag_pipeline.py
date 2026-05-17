@@ -3,7 +3,7 @@
 import torch
 import sys
 
-from typing import List, Optional, Dict, Any
+from typing import List, Optional
 from langchain_huggingface.embeddings import HuggingFaceEmbeddings
 from langchain_community.cross_encoders import HuggingFaceCrossEncoder
 from langchain_classic.retrievers.document_compressors.cross_encoder_rerank import CrossEncoderReranker
@@ -14,7 +14,6 @@ from qdrant_client import models, QdrantClient
 from langchain_core.documents import Document
 
 
-from config import get_settings
 from models.schemes import BookNote
 
 class ReadingNotesRAG:
@@ -152,7 +151,7 @@ if __name__ == "__main__":
             print(f"标题: {res.metadata.get('title', 'N/A')}")
             print(res.page_content)  # 只显示前200字符
     except Exception as e:
-        print(f"\n💥 运行时发生未捕获异常:", file=sys.stderr, flush=True)
+        print(f"\n💥 运行时发生未捕获异常: {e}", file=sys.stderr, flush=True)
         import traceback
         traceback.print_exc()
         sys.exit(1)

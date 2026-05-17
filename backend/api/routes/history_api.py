@@ -2,13 +2,15 @@
 
 from fastapi import APIRouter, Query, HTTPException
 
-from storage.database import (
-    get_reading_history,
-    get_reading_history_by_id,
-    delete_reading_history,
+from storage.conversation_history_dao import (
     get_conversations,
     get_conversation_detail,
     delete_conversation,
+)
+from storage.reading_history_dao import (
+    get_reading_history,
+    get_reading_history_by_id,
+    delete_reading_history
 )
 from models.schemes import (
     ReadingHistoryItem,
