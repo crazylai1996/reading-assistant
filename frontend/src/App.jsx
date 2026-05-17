@@ -250,34 +250,40 @@ function App() {
   const fetchReadingHistory = useCallback(async () => {
     setLoadingHistory(true)
     try {
-      const res = await fetch(`${API_BASE}/history/reading?user_id=laixiaoming`)
+      const res = await fetch(`${API_BASE}/history/reading`)
       if (res.ok) {
         const data = await res.json()
         setReadingHistory(data.items || [])
 
         if (data.items) {
-          currentBooks = data.items.map(item => (
+          const currentBooks = data.items.map(item => (
             {
               title: item.book_title,
               author: item.author,
               historyId: item.id
             }
-          )) 
+          ))
           setBooks(currentBooks)
         }
         
       }
-    } catch {
+    } catch (error){
       // silent
+      console.error('Failed to fetch reading history:', error)
     } finally {
       setLoadingHistory(false)
     }
   }, [])
 
+  // 初始加载时默认展示读书笔记历史
+  useEffect(() => {
+    fetchReadingHistory()
+  }, [])
+
   const fetchConversations = useCallback(async () => {
     setLoadingConversations(true)
     try {
-      const res = await fetch(`${API_BASE}/history/conversations?user_id=laixiaoming`)
+      const res = await fetch(`${API_BASE}/history/conversations`)
       if (res.ok) {
         const data = await res.json()
         setConversations(data.items || [])

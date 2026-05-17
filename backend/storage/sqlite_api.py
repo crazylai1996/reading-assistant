@@ -11,6 +11,11 @@ def get_db() -> sqlite3.Connection:
     conn.execute("PRAGMA foreign_keys = ON")
     return conn
 
+def get_agent_db() -> sqlite3.Connection:
+    """为agent提供一个独立的数据库连接，避免与API使用的连接冲突"""
+    conn = sqlite3.connect("langgraph_history.db", check_same_thread=False)
+    return conn
+
 def init_db():
     conn = get_db()
     cursor = conn.cursor()

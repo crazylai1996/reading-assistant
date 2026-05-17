@@ -74,9 +74,6 @@ async def upload_reading_note(file: UploadFile = File(..., description="仅支�
 async def ask_notes(request: AskRequest):
     print(f"💬 收到问答请求: query={request.query[:50]}..., conv_id={request.conversation_id}")
     try:
-        answer = reading_notes_agent.ask_notes(user_id="laixiaoming",
-                                             ask_request=request)
-
         conversation_id = request.conversation_id
         if conversation_id is None:
             title = request.query[:30] + ("..." if len(request.query) > 30 else "")
@@ -85,8 +82,10 @@ async def ask_notes(request: AskRequest):
                 title=title,
                 book_filter=request.book_filter,
             )
-            add_conversation_message(conversation_id, "user", request.query)
-
+        add_conversation_message(conversation_id, "user", request.query)
+        request.conversation_id = conversation_id
+        answer = reading_notes_agent.ask_notes(user_id="laixiaoming",
+                                             ask_request=request)
         add_conversation_message(conversation_id, "assistant", answer)
 
         return AskResponse(answer=answer, conversation_id=conversation_id)

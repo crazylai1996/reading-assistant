@@ -12,7 +12,7 @@ from langgraph.checkpoint.sqlite import SqliteSaver
 from models.schemes import AskRequest
 from rag.rag_pipeline import ReadingNotesRAG
 from llm.simple_llm_client import create_llm_client
-from storage.sqlite_api import get_db
+from storage.sqlite_api import get_agent_db
 
 
 @dataclass
@@ -39,7 +39,7 @@ class ReadingNotesAgent:
         self.rag_pipeline = rag_pipeline
         self.llm = create_llm_client()
 
-        sqlite_conn = get_db()
+        sqlite_conn = get_agent_db()
         checkpoint_saver = SqliteSaver(sqlite_conn)
         search_tool = StructuredTool.from_function(
             func=self.search_notes,
@@ -63,8 +63,10 @@ class ReadingNotesAgent:
     def ask_notes(self, user_id: str, ask_request: AskRequest) -> str:
         """基于读书笔记回答问题"""
         query = self._build_query(ask_request=ask_request)
+        conversation_id = ask_request.conversation_id
         response = self.agent.invoke({"messages": [{"role": "user", "content": query}]}, 
-                                     context=UserContext(user_id=user_id), )
+                                     context=UserContext(user_id=user_id), 
+                                     config={"configurable": {"thread_id": conversation_id}})
         return self._get_final_response(response)
     def _build_query(self, ask_request: AskRequest) -> str:
         query = f"""
